@@ -31,7 +31,7 @@ export const Route = createFileRoute("/api/analyze")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = process.env.LOVABLE_API_KEY;
+        const apiKey = process.env["LOVABLE_API_KEY"];
         if (!apiKey) return new Response("The helper is not set up yet.", { status: 500 });
         const body = (await request.json()) as { mode: Mode; files: Upload[]; question?: string };
         if (!PROMPTS[body.mode] || !body.files?.length)
@@ -66,7 +66,7 @@ export const Route = createFileRoute("/api/analyze")({
           instructions: PROMPTS[body.mode],
           messages: [{ role: "user", content } as ModelMessage],
           abortSignal: request.signal,
-          onError: ({ error }) => {
+          onError: ({ error }: { error: unknown }) => {
             upstreamError = error instanceof Error ? error.message : String(error);
             console.error("analyze error", error);
           },
