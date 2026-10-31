@@ -1,24 +1,166 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import { ShieldAlert, FileText, Navigation, Upload, X, ArrowLeft, Loader2 } from "lucide-react";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Helping Hand — Scam checker, bill explainer & app guide" },
+      { name: "description", content: "Check messages for scams, understand bills in plain words, and get step-by-step help using apps." },
+      { property: "og:title", content: "Helping Hand" },
+      { property: "og:description", content: "Simple, friendly help with scams, bills, and apps." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
+type Mode = "scam" | "simplify" | "navigate";
+
+const MODES: Record<Mode, { title: string; blurb: string; icon: typeof ShieldAlert; upload: string; ask?: string; placeholder?: string; accept: string; multiple: boolean }> = {
+  scam: { title: "Is this a scam?", blurb: "Add a picture of a text message or email.", icon: ShieldAlert, upload: "Add a screenshot of the message", ask: "Anything else to mention? (optional)", placeholder: "e.g. They say they're from my bank", accept: "image/*", multiple: true },
+  simplify: { title: "Explain my bill or form", blurb: "Add pictures of bills, letters, or forms.", icon: FileText, upload: "Add pictures or PDFs of your papers", ask: "Any question about it? (optional)", placeholder: "e.g. How much do I owe and when?", accept: "image/*,application/pdf", multiple: true },
+  navigate: { title: "Help me use an app", blurb: "Add a picture of your screen and say what you want to do.", icon: Navigation, upload: "Add a screenshot of your screen", ask: "What do you want to do?", placeholder: "e.g. I want to send a photo to my daughter", accept: "image/*", multiple: false },
+};
+
+type Picked = { name: string; type: string; data: string; preview: string };
+
+const readFile = (f: File) =>
+  new Promise<Picked>((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const url = String(r.result);
+      res({ name: f.name, type: f.type, data: url.split(",")[1] ?? "", preview: url });
+    };
+    r.onerror = rej;
+    r.readAsDataURL(f);
+  });
+
 function Index() {
+  const [mode, setMode] = useState<Mode | null>(null);
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <main className="mx-auto min-h-screen max-w-3xl px-5 py-10">
+      <header className="mb-10 text-center">
+        <p className="text-lg font-bold uppercase tracking-widest text-accent">Helping Hand</p>
+        <h1 className="mt-2 text-4xl font-bold leading-tight sm:text-5xl">
+          {mode ? MODES[mode].title : "What would you like help with?"}
+        </h1>
+      </header>
+      {mode ? <Helper mode={mode} onBack={() => setMode(null)} /> : (
+        <div className="grid gap-5">
+          {(Object.keys(MODES) as Mode[]).map((m) => {
+            const M = MODES[m];
+            return (
+              <button key={m} onClick={() => setMode(m)}
+                className="flex items-center gap-6 rounded-2xl border-2 bg-card p-6 text-left shadow-sm transition hover:border-primary hover:shadow-md focus-visible:outline-4 focus-visible:outline-ring">
+                <span className="grid h-20 w-20 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
+                  <M.icon className="h-10 w-10" />
+                </span>
+                <span>
+                  <span className="block text-2xl font-bold">{M.title}</span>
+                  <span className="mt-1 block text-lg text-muted-foreground">{M.blurb}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </main>
+  );
+}
+
+function Helper({ mode, onBack }: { mode: Mode; onBack: () => void }) {
+  const M = MODES[mode];
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<Picked[]>([]);
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const add = async (list: FileList | null) => {
+    if (!list) return;
+    const picked = await Promise.all(Array.from(list).map(readFile));
+    setFiles((prev) => (M.multiple ? [...prev, ...picked].slice(0, 10) : picked.slice(0, 1)));
+  };
+
+  const go = async () => {
+    setError(""); setAnswer("");
+    if (!files.length) return setError("Please add a picture first.");
+    if (mode === "navigate" && !question.trim()) return setError("Please tell us what you want to do.");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode, question, files: files.map(({ name, type, data }) => ({ name, type, data })) }),
+      });
+      if (!res.ok || !res.body) throw new Error((await res.text()) || "Something went wrong.");
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let text = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        text += dec.decode(value, { stream: true });
+        setAnswer(text);
+      }
+      if (!text.trim()) throw new Error("We couldn't read that. Please try a clearer picture.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally { setLoading(false); }
+  };
+
+  const verdict = answer.match(/Verdict:\s*(.+)/i)?.[1]?.toLowerCase() ?? "";
+  const tone = verdict.includes("scam") ? "border-destructive" : verdict.includes("careful") ? "border-warning" : verdict.includes("safe") ? "border-success" : "border-border";
+
+  return (
+    <div className="space-y-6">
+      <button onClick={onBack} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-lg font-bold text-primary hover:bg-secondary">
+        <ArrowLeft className="h-6 w-6" /> Back
+      </button>
+
+      <input ref={inputRef} type="file" hidden accept={M.accept} multiple={M.multiple} onChange={(e) => { add(e.target.files); e.target.value = ""; }} />
+      <button onClick={() => inputRef.current?.click()}
+        className="flex w-full flex-col items-center gap-3 rounded-2xl border-4 border-dashed border-input bg-card p-10 text-xl font-bold hover:border-primary">
+        <Upload className="h-12 w-12 text-primary" /> {M.upload}
+      </button>
+
+      {files.length > 0 && (
+        <div className="flex flex-wrap gap-3">
+          {files.map((f, i) => (
+            <div key={i} className="relative h-28 w-28 overflow-hidden rounded-xl border-2 bg-muted">
+              {f.type.startsWith("image/") ? <img src={f.preview} alt={f.name} className="h-full w-full object-cover" />
+                : <div className="grid h-full place-items-center p-2 text-center text-sm"><FileText className="h-8 w-8" />{f.name}</div>}
+              <button aria-label="Remove" onClick={() => setFiles(files.filter((_, j) => j !== i))}
+                className="absolute right-1 top-1 rounded-full bg-foreground p-1 text-background"><X className="h-5 w-5" /></button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {M.ask && (
+        <label className="block">
+          <span className="mb-2 block text-xl font-bold">{M.ask}</span>
+          <textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder={M.placeholder} rows={2}
+            className="w-full rounded-xl border-2 border-input bg-card p-4 text-lg focus:border-primary focus:outline-none" />
+        </label>
+      )}
+
+      <button onClick={go} disabled={loading}
+        className="flex w-full items-center justify-center gap-3 rounded-2xl bg-primary px-6 py-5 text-2xl font-bold text-primary-foreground shadow-md hover:opacity-90 disabled:opacity-60">
+        {loading ? <><Loader2 className="h-7 w-7 animate-spin" /> Looking…</> : "Help me"}
+      </button>
+
+      {error && <p role="alert" className="rounded-xl bg-destructive p-4 text-lg font-bold text-destructive-foreground">{error}</p>}
+
+      {answer && (
+        <section aria-live="polite" className={`answer rounded-2xl border-4 ${tone} bg-card p-6 text-lg`}>
+          <ReactMarkdown>{answer}</ReactMarkdown>
+        </section>
+      )}
     </div>
   );
 }
