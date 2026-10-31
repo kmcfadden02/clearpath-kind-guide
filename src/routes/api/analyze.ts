@@ -10,7 +10,7 @@ import {
 type Mode = "scam" | "simplify" | "navigate" | "fix";
 type Upload = { name: string; type: string; data: string }; // data = base64 (no prefix)
 
-const BASE = "You are a patient, kind helper for older adults. Use short sentences, plain everyday words, and no jargon. Use markdown headings and bullet lists. Never ask for passwords, bank details, or personal info.";
+const BASE = "You are a patient, kind helper for older adults. Use short sentences, plain everyday words, and no jargon. Use markdown headings and bullet lists. Never ask for passwords, bank details, or personal info. The user may not have added a picture; in that case help from their description alone.";
 
 const PROMPTS: Record<Mode, string> = {
   scam: `${BASE}
@@ -47,7 +47,6 @@ export const Route = createFileRoute("/api/analyze")({
         if (body.files.length > 10) return new Response("Please add 10 pictures or fewer.", { status: 400 });
 
         const content: Exclude<ModelMessage["content"], string> = [];
-        const q = body.question?.trim();
         content.push({
           type: "text",
           text: q ? `My question / what I want to do: ${q}` : "Please help me with these.",
