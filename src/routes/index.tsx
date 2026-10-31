@@ -49,23 +49,28 @@ function Index() {
         </h1>
       </header>
       {mode ? <Helper mode={mode} onBack={() => setMode(null)} /> : (
-        <div className="grid gap-5">
-          {(Object.keys(MODES) as Mode[]).map((m) => {
-            const M = MODES[m];
-            return (
-              <button key={m} onClick={() => setMode(m)}
-                className="flex items-center gap-6 rounded-2xl border-2 bg-card p-6 text-left shadow-sm transition hover:border-primary hover:shadow-md focus-visible:outline-4 focus-visible:outline-ring">
-                <span className="grid h-20 w-20 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
-                  <M.icon className="h-10 w-10" />
-                </span>
-                <span>
-                  <span className="block text-2xl font-bold">{M.title}</span>
-                  <span className="mt-1 block text-lg text-muted-foreground">{M.blurb}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <>
+          <div className="grid gap-5">
+            {(Object.keys(MODES) as Mode[]).map((m) => {
+              const M = MODES[m];
+              return (
+                <button key={m} onClick={() => setMode(m)}
+                  className="flex items-center gap-6 rounded-2xl border-2 bg-card p-6 text-left shadow-sm transition hover:border-primary hover:shadow-md focus-visible:outline-4 focus-visible:outline-ring">
+                  <span className="grid h-20 w-20 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
+                    <M.icon className="h-10 w-10" />
+                  </span>
+                  <span>
+                    <span className="block text-2xl font-bold">{M.title}</span>
+                    <span className="mt-1 block text-lg text-muted-foreground">{M.blurb}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-10 text-center text-lg text-muted-foreground">
+            Tip: to put Helping Hand on your phone's home screen, tap the Share button or the menu in your browser and choose "Add to Home Screen."
+          </p>
+        </>
       )}
     </main>
   );
