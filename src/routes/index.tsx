@@ -94,7 +94,7 @@ function Helper({ mode, onBack }: { mode: Mode; onBack: () => void }) {
 
   const go = async () => {
     setError(""); setAnswer("");
-    if (!files.length) return setError("Please add a picture first.");
+    if (!files.length && !question.trim()) return setError("Please add a picture or describe what's going on.");
     if ((mode === "navigate" || mode === "fix") && !question.trim()) return setError("Please tell us what's wrong or what you want to do.");
     setLoading(true);
     try {
@@ -149,7 +149,7 @@ function Helper({ mode, onBack }: { mode: Mode; onBack: () => void }) {
 
       {M.ask && (
         <label className="block">
-          <span className="mb-2 block text-xl font-bold">{M.ask}</span>
+          <span className="mb-2 block text-xl font-bold">{files.length ? M.ask : M.ask.replace(" (optional)", "")}</span>
           <textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder={M.placeholder} rows={2}
             className="w-full rounded-xl border-2 border-input bg-card p-4 text-lg focus:border-primary focus:outline-none" />
         </label>

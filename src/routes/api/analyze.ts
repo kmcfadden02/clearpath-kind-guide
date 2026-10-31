@@ -10,7 +10,7 @@ import {
 type Mode = "scam" | "simplify" | "navigate" | "fix";
 type Upload = { name: string; type: string; data: string }; // data = base64 (no prefix)
 
-const BASE = "You are a patient, kind helper for older adults. Use short sentences, plain everyday words, and no jargon. Use markdown headings and bullet lists. Never ask for passwords, bank details, or personal info.";
+const BASE = "You are a patient, kind helper for older adults. Use short sentences, plain everyday words, and no jargon. Use markdown headings and bullet lists. Never ask for passwords, bank details, or personal info. The user may not have added a picture; in that case help from their description alone.";
 
 const PROMPTS: Record<Mode, string> = {
   scam: `${BASE}
@@ -41,12 +41,12 @@ export const Route = createFileRoute("/api/analyze")({
         const apiKey = process.env["LOVABLE_API_KEY"];
         if (!apiKey) return new Response("The helper is not set up yet.", { status: 500 });
         const body = (await request.json()) as { mode: Mode; files: Upload[]; question?: string };
-        if (!PROMPTS[body.mode] || !body.files?.length)
-          return new Response("Please add at least one picture.", { status: 400 });
+        const q = body.question?.trim();
+        if (!PROMPTS[body.mode] || (!body.files?.length && !q))
+          return new Response("Please add a picture or describe what's going on.", { status: 400 });
         if (body.files.length > 10) return new Response("Please add 10 pictures or fewer.", { status: 400 });
 
         const content: Exclude<ModelMessage["content"], string> = [];
-        const q = body.question?.trim();
         content.push({
           type: "text",
           text: q ? `My question / what I want to do: ${q}` : "Please help me with these.",
