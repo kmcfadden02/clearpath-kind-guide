@@ -94,7 +94,7 @@ function Helper({ mode, onBack }: { mode: Mode; onBack: () => void }) {
 
   const go = async () => {
     setError(""); setAnswer("");
-    if (!files.length) return setError("Please add a picture first.");
+    if (!files.length && !question.trim()) return setError("Please add a picture or describe what's going on.");
     if ((mode === "navigate" || mode === "fix") && !question.trim()) return setError("Please tell us what's wrong or what you want to do.");
     setLoading(true);
     try {

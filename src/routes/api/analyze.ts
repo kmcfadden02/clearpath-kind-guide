@@ -41,8 +41,9 @@ export const Route = createFileRoute("/api/analyze")({
         const apiKey = process.env["LOVABLE_API_KEY"];
         if (!apiKey) return new Response("The helper is not set up yet.", { status: 500 });
         const body = (await request.json()) as { mode: Mode; files: Upload[]; question?: string };
-        if (!PROMPTS[body.mode] || !body.files?.length)
-          return new Response("Please add at least one picture.", { status: 400 });
+        const q = body.question?.trim();
+        if (!PROMPTS[body.mode] || (!body.files?.length && !q))
+          return new Response("Please add a picture or describe what's going on.", { status: 400 });
         if (body.files.length > 10) return new Response("Please add 10 pictures or fewer.", { status: 400 });
 
         const content: Exclude<ModelMessage["content"], string> = [];
