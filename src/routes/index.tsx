@@ -27,6 +27,7 @@ const MODES: Record<Mode, { title: string; blurb: string; icon: typeof ShieldAle
 };
 
 type Picked = { name: string; type: string; data: string; preview: string };
+type Turn = { role: "user" | "assistant"; text: string; files: Picked[] };
 
 const readFile = (f: File) =>
   new Promise<Picked>((res, rej) => {
@@ -85,6 +86,8 @@ function Helper({ mode, onBack }: { mode: Mode; onBack: () => void }) {
   const [answer, setAnswer] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [followUp, setFollowUp] = useState("");
 
   const add = async (list: FileList | null) => {
     if (!list) return;
@@ -94,26 +97,42 @@ function Helper({ mode, onBack }: { mode: Mode; onBack: () => void }) {
 
   const go = async () => {
     setError(""); setAnswer("");
-    if (!files.length && !question.trim()) return setError("Please add a picture or describe what's going on.");
-    if ((mode === "navigate" || mode === "fix") && !question.trim()) return setError("Please tell us what's wrong or what you want to do.");
+  const go = async (isFollowUp = false) => {
+    setError(""); setAnswer("");
+    const text = (isFollowUp ? followUp : question).trim();
+    if (!isFollowUp) {
+      if (!files.length && !text) return setError("Please add a picture or describe what's going on.");
+      if ((mode === "navigate" || mode === "fix") && !text) return setError("Please tell us what's wrong or what you want to do.");
+    } else if (!text) {
+      return setError("Please type your question.");
+    }
+    const usedCount = turns.reduce((n, t) => n + t.files.length, 0);
+    const attached = files.slice(usedCount);
     setLoading(true);
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode, question, files: files.map(({ name, type, data }) => ({ name, type, data })) }),
+        body: JSON.stringify({
+          mode,
+          question: text,
+          files: attached.map(({ name, type, data }) => ({ name, type, data })),
+          history: turns.map((t) => ({ role: t.role, text: t.text, files: t.files.map(({ name, type, data }) => ({ name, type, data })) })),
+        }),
       });
       if (!res.ok || !res.body) throw new Error((await res.text()) || "Something went wrong.");
       const reader = res.body.getReader();
       const dec = new TextDecoder();
-      let text = "";
+      let answerText = "";
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
-        text += dec.decode(value, { stream: true });
-        setAnswer(text);
+        answerText += dec.decode(value, { stream: true });
+        setAnswer(answerText);
       }
-      if (!text.trim()) throw new Error("We couldn't read that. Please try a clearer picture.");
+      if (!answerText.trim()) throw new Error("We couldn't read that. Please try a clearer picture.");
+      setTurns((prev) => [...prev, { role: "user", text, files: attached }, { role: "assistant", text: answerText }]);
+      setFollowUp("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
     } finally { setLoading(false); }
