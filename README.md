@@ -1,6 +1,8 @@
 # Clearpath Kind Guide
 
-I want to build an app to help the elderly. I want it to be able to look at a screenshot of text messages and identify wether it is a scam or not, I want it to look at a set of documents like bills or other complex forms and simplify them, I want it to also look at a screenshot of an app and help navigate to where the person wants to go
+Clearpath is an AI-powered mobile application designed to help older adults confidently navigate the digital world. The app serves as a personal digital safety companion, protecting users from scams, guiding them through technology, and providing easy access to trusted support when needed.
+
+As technology becomes increasingly important for daily life, many seniors face challenges such as identifying online scams, using unfamiliar apps, managing digital accounts, and understanding emerging technologies. Clearpath addresses these challenges through a simple, accessible, and user-friendly platform specifically designed for older adults.
 
 This project was built with [Lovable](https://lovable.dev).
 
