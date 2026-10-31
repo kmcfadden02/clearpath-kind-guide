@@ -69,7 +69,7 @@
 }
 
 /* Gold lettering: headings and button text read in gold everywhere */
-h1, h2, .answer h3 { color: var(--color-accent); }
+h1, h2, .answer h3, label > span { color: var(--color-accent); }
 button, button * { color: var(--color-accent); }
 
 @layer components {
