@@ -68,6 +68,10 @@
   h1, h2 { font-family: var(--font-display); }
 }
 
+/* Gold lettering: headings and button text read in gold everywhere */
+h1, h2, .answer h3, label > span { color: var(--color-accent); }
+button, button * { color: var(--color-accent); }
+
 @layer components {
   .answer h2 { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; margin: 0 0 0.75rem; }
   .answer h3 { font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: var(--color-primary); }
