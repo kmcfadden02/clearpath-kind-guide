@@ -7,7 +7,7 @@ import {
   withLovableAiGatewayRunIdHeader,
 } from "@/lib/ai/run-id.server";
 
-type Mode = "scam" | "simplify" | "navigate";
+type Mode = "scam" | "simplify" | "navigate" | "fix";
 type Upload = { name: string; type: string; data: string }; // data = base64 (no prefix)
 
 const BASE = "You are a patient, kind helper for older adults. Use short sentences, plain everyday words, and no jargon. Use markdown headings and bullet lists. Never ask for passwords, bank details, or personal info.";
