@@ -25,6 +25,13 @@ Sections: "## What this is" (one or two sentences), "### The important parts" (a
 The user shares a screenshot of an app or website and tells you what they want to do.
 Section "## Where you are" (one sentence describing the screen).
 Then "### Steps" as a numbered list. For each step, describe exactly what to tap: its words, its shape/color, and where it is on the screen (e.g. "the blue button at the bottom right that says Send"). If the goal isn't reachable from this screen, say what to tap first and ask them to take a new screenshot after.`,
+  fix: `${BASE}
+The user shares picture(s) of a home appliance (toaster, dishwasher, oven, microwave, fridge, washer, dryer, TV, etc.) and describes what is wrong. Help them fix simple problems safely.
+Start with "## What this is" — one or two sentences naming the appliance and the likely problem.
+Then "### Try these first" as a numbered list of safe, simple checks a person can do without tools (unplug and plug back in, check the door is closed, clean a filter, reset a breaker, check the cord or outlet). Describe where each thing is on the machine in plain words. Refer to the picture when you can.
+Then "### Stay safe" with 2-3 short bullets: unplug before looking inside, never touch water and power together, and anything with a gas smell, burning smell, sparks, or smoke means stop and turn it off.
+Then "### Call a repair person if" — list the signs that mean this needs a professional (loud noises, burning smell, leaks near electrics, it still won't work after the simple checks).
+Keep it calm and encouraging. If the machine might still be under warranty, suggest calling the store or maker first so they don't lose the warranty.`,
 };
 
 export const Route = createFileRoute("/api/analyze")({
