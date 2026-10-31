@@ -1,15 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { ShieldAlert, FileText, Navigation, Upload, X, ArrowLeft, Loader2 } from "lucide-react";
+import { ShieldAlert, FileText, Navigation, Wrench, Upload, X, ArrowLeft, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Helping Hand — Scam checker, bill explainer & app guide" },
-      { name: "description", content: "Check messages for scams, understand bills in plain words, and get step-by-step help using apps." },
+      { title: "Helping Hand — Scam checker, bill explainer, app guide & appliance fixes" },
+      { name: "description", content: "Check messages for scams, understand bills in plain words, get step-by-step help using apps, and fix common appliance problems." },
       { property: "og:title", content: "Helping Hand" },
-      { property: "og:description", content: "Simple, friendly help with scams, bills, and apps." },
+      { property: "og:description", content: "Simple, friendly help with scams, bills, apps, and home appliances." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -17,12 +17,13 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type Mode = "scam" | "simplify" | "navigate";
+type Mode = "scam" | "simplify" | "navigate" | "fix";
 
 const MODES: Record<Mode, { title: string; blurb: string; icon: typeof ShieldAlert; upload: string; ask?: string; placeholder?: string; accept: string; multiple: boolean }> = {
   scam: { title: "Is this a scam?", blurb: "Add a picture of a text message or email.", icon: ShieldAlert, upload: "Add a screenshot of the message", ask: "Anything else to mention? (optional)", placeholder: "e.g. They say they're from my bank", accept: "image/*", multiple: true },
   simplify: { title: "Explain my bill or form", blurb: "Add pictures of bills, letters, or forms.", icon: FileText, upload: "Add pictures or PDFs of your papers", ask: "Any question about it? (optional)", placeholder: "e.g. How much do I owe and when?", accept: "image/*,application/pdf", multiple: true },
   navigate: { title: "Help me use an app", blurb: "Add a picture of your screen and say what you want to do.", icon: Navigation, upload: "Add a screenshot of your screen", ask: "What do you want to do?", placeholder: "e.g. I want to send a photo to my daughter", accept: "image/*", multiple: false },
+  fix: { title: "Fix my appliance", blurb: "A toaster, dishwasher, oven, washer and more. Add a picture and say what's wrong.", icon: Wrench, upload: "Add a picture of the appliance or the problem", ask: "What's wrong? What happened?", placeholder: "e.g. The dishwasher fills with water but won't drain", accept: "image/*", multiple: true },
 };
 
 type Picked = { name: string; type: string; data: string; preview: string };
@@ -94,7 +95,7 @@ function Helper({ mode, onBack }: { mode: Mode; onBack: () => void }) {
   const go = async () => {
     setError(""); setAnswer("");
     if (!files.length) return setError("Please add a picture first.");
-    if (mode === "navigate" && !question.trim()) return setError("Please tell us what you want to do.");
+    if ((mode === "navigate" || mode === "fix") && !question.trim()) return setError("Please tell us what's wrong or what you want to do.");
     setLoading(true);
     try {
       const res = await fetch("/api/analyze", {
