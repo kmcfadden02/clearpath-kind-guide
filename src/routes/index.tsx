@@ -95,8 +95,6 @@ function Helper({ mode, onBack }: { mode: Mode; onBack: () => void }) {
     setFiles((prev) => (M.multiple ? [...prev, ...picked].slice(0, 10) : picked.slice(0, 1)));
   };
 
-  const go = async () => {
-    setError(""); setAnswer("");
   const go = async (isFollowUp = false) => {
     setError(""); setAnswer("");
     const text = (isFollowUp ? followUp : question).trim();
