@@ -129,7 +129,8 @@ function Helper({ mode, onBack }: { mode: Mode; onBack: () => void }) {
         setAnswer(answerText);
       }
       if (!answerText.trim()) throw new Error("We couldn't read that. Please try a clearer picture.");
-      setTurns((prev) => [...prev, { role: "user", text, files: attached }, { role: "assistant", text: answerText }]);
+      setTurns((prev) => [...prev, { role: "user", text, files: attached }, { role: "assistant", text: answerText, files: [] }]);
+      setAnswer("");
       setFollowUp("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
