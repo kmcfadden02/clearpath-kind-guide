@@ -40,11 +40,28 @@ export const Route = createFileRoute("/api/analyze")({
       POST: async ({ request }) => {
         const apiKey = process.env["LOVABLE_API_KEY"];
         if (!apiKey) return new Response("The helper is not set up yet.", { status: 500 });
-        const body = (await request.json()) as { mode: Mode; files: Upload[]; question?: string };
+        const body = (await request.json()) as { mode: Mode; files: Upload[]; question?: string; history?: { role: "user" | "assistant"; text: string; files?: Upload[] }[] };
+        body.files = body.files ?? [];
         const q = body.question?.trim();
-        if (!PROMPTS[body.mode] || (!body.files?.length && !q))
+        if (!PROMPTS[body.mode] || (!body.files.length && !q))
           return new Response("Please add a picture or describe what's going on.", { status: 400 });
-        if (body.files.length > 10) return new Response("Please add 10 pictures or fewer.", { status: 400 });
+        const history = (body.history ?? []).slice(-20);
+        const totalFiles = body.files.length + history.reduce((n, t) => n + (t.files?.length ?? 0), 0);
+        if (totalFiles > 10) return new Response("Please add 10 pictures or fewer.", { status: 400 });
+        const toParts = (text: string, files: Upload[]) => {
+          const parts: unknown[] = [{ type: "text", text }];
+          for (const f of files) {
+            if (!f.data) continue;
+            if (f.type === "application/pdf") parts.push({ type: "file", filename: f.name, data: f.data, mediaType: "application/pdf" });
+            else if (f.type.startsWith("image/")) parts.push({ type: "image", image: new URL(`data:${f.type};base64,${f.data}`) });
+          }
+          return parts;
+        };
+        const past: ModelMessage[] = history.map((t) =>
+          t.role === "assistant"
+            ? ({ role: "assistant", content: t.text } as ModelMessage)
+            : ({ role: "user", content: toParts(t.text || "Please help me with these.", t.files ?? []) } as ModelMessage),
+        );
 
         const content: Exclude<ModelMessage["content"], string> = [];
         content.push({
