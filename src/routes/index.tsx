@@ -95,8 +95,6 @@ function Helper({ mode, onBack }: { mode: Mode; onBack: () => void }) {
     setFiles((prev) => (M.multiple ? [...prev, ...picked].slice(0, 10) : picked.slice(0, 1)));
   };
 
-  const go = async () => {
-    setError(""); setAnswer("");
   const go = async (isFollowUp = false) => {
     setError(""); setAnswer("");
     const text = (isFollowUp ? followUp : question).trim();
@@ -131,14 +129,15 @@ function Helper({ mode, onBack }: { mode: Mode; onBack: () => void }) {
         setAnswer(answerText);
       }
       if (!answerText.trim()) throw new Error("We couldn't read that. Please try a clearer picture.");
-      setTurns((prev) => [...prev, { role: "user", text, files: attached }, { role: "assistant", text: answerText }]);
+      setTurns((prev) => [...prev, { role: "user", text, files: attached }, { role: "assistant", text: answerText, files: [] }]);
+      setAnswer("");
       setFollowUp("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
     } finally { setLoading(false); }
   };
 
-  const verdict = answer.match(/Verdict:\s*(.+)/i)?.[1]?.toLowerCase() ?? "";
+  const verdict = (turns[1]?.text ?? answer).match(/Verdict:\s*(.+)/i)?.[1]?.toLowerCase() ?? "";
   const tone = verdict.includes("scam") ? "border-destructive" : verdict.includes("careful") ? "border-warning" : verdict.includes("safe") ? "border-success" : "border-border";
 
   return (
@@ -174,17 +173,44 @@ function Helper({ mode, onBack }: { mode: Mode; onBack: () => void }) {
         </label>
       )}
 
-      <button onClick={go} disabled={loading}
-        className="flex w-full items-center justify-center gap-3 rounded-2xl bg-primary px-6 py-5 text-2xl font-bold text-primary-foreground shadow-md hover:opacity-90 disabled:opacity-60">
-        {loading ? <><Loader2 className="h-7 w-7 animate-spin" /> Looking…</> : "Help me"}
-      </button>
+      {turns.length === 0 && (
+        <button onClick={() => go(false)} disabled={loading}
+          className="flex w-full items-center justify-center gap-3 rounded-2xl bg-primary px-6 py-5 text-2xl font-bold text-primary-foreground shadow-md hover:opacity-90 disabled:opacity-60">
+          {loading ? <><Loader2 className="h-7 w-7 animate-spin" /> Looking…</> : "Help me"}
+        </button>
+      )}
+
+      {turns.map((t, i) =>
+        t.role === "assistant" ? (
+          <section key={i} className={`answer rounded-2xl border-4 ${i === 1 ? tone : "border-border"} bg-card p-6 text-lg`}>
+            <ReactMarkdown>{t.text}</ReactMarkdown>
+          </section>
+        ) : i > 0 ? (
+          <p key={i} className="ml-auto max-w-[85%] rounded-2xl bg-secondary p-4 text-lg font-bold">You asked: {t.text}</p>
+        ) : null,
+      )}
+
+      {answer && (
+        <section aria-live="polite" className={`answer rounded-2xl border-4 ${turns.length ? "border-border" : tone} bg-card p-6 text-lg`}>
+          <ReactMarkdown>{answer}</ReactMarkdown>
+        </section>
+      )}
 
       {error && <p role="alert" className="rounded-xl bg-destructive p-4 text-lg font-bold text-destructive-foreground">{error}</p>}
 
-      {answer && (
-        <section aria-live="polite" className={`answer rounded-2xl border-4 ${tone} bg-card p-6 text-lg`}>
-          <ReactMarkdown>{answer}</ReactMarkdown>
-        </section>
+      {turns.length > 0 && (
+        <div className="space-y-3 rounded-2xl border-2 bg-card p-5">
+          <label className="block">
+            <span className="mb-2 block text-xl font-bold">Ask another question about this</span>
+            <textarea value={followUp} onChange={(e) => setFollowUp(e.target.value)} rows={2}
+              placeholder="e.g. What should I do next?"
+              className="w-full rounded-xl border-2 border-input bg-background p-4 text-lg focus:border-primary focus:outline-none" />
+          </label>
+          <button onClick={() => go(true)} disabled={loading}
+            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-primary px-6 py-4 text-xl font-bold text-primary-foreground shadow-md hover:opacity-90 disabled:opacity-60">
+            {loading ? <><Loader2 className="h-6 w-6 animate-spin" /> Looking…</> : "Ask"}
+          </button>
+        </div>
       )}
     </div>
   );
