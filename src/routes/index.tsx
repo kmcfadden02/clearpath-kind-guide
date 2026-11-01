@@ -136,7 +136,7 @@ function Helper({ mode, onBack }: { mode: Mode; onBack: () => void }) {
     } finally { setLoading(false); }
   };
 
-  const verdict = answer.match(/Verdict:\s*(.+)/i)?.[1]?.toLowerCase() ?? "";
+  const verdict = (turns[1]?.text ?? answer).match(/Verdict:\s*(.+)/i)?.[1]?.toLowerCase() ?? "";
   const tone = verdict.includes("scam") ? "border-destructive" : verdict.includes("careful") ? "border-warning" : verdict.includes("safe") ? "border-success" : "border-border";
 
   return (
